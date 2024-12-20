@@ -22,12 +22,25 @@ export function useProducts() {
     const { context } = useSession();
     const params = new URLSearchParams({ context }).toString();
     // Request is deduped and cached; Can be shared across components
-    const { data, error } = useSWR(context ? ['/api/products', params] : null, fetcher);
+
+    // eslint-disable-next-line prefer-const
+    let { data, error } = useSWR(context ? ['/api/products', params] : null, fetcher);
+
+
+    if (error) {
+        console.error("Error fetching products:", error);
+        throw Error(error);
+    }
+
+    if (!data)
+        data = {inventory_count: "$$tbd"}
+    if (!data.inventory_count)
+        data.inventory_count = "$$tbd2";
 
     return {
-        summary: data,
+        summary: data,  // for crude debugging you can return {inventory_count : JSON.stringify(data)}, // or JSON.stringify(error)
         isLoading: !data && !error,
-        error,
+        error
     };
 }
 
@@ -37,6 +50,10 @@ export function useProductList(query?: QueryParams) {
 
     // Use an array to send multiple arguments to fetcher
     const { data, error, mutate: mutateList } = useSWR(context ? ['/api/products/list', params] : null, fetcher);
+
+    if (error) {
+        console.error("Error with useProductList:", error);
+    }
 
     return {
         list: data?.data,
